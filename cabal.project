@@ -1,0 +1,4 @@
+packages: ./shields.cabal
+
+package shields
+  ghc-options: -Werror
