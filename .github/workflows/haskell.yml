@@ -1,0 +1,48 @@
+name: CI
+
+on:
+  pull_request:
+  push:
+    branches: [main]
+
+jobs:
+  cabal:
+    name: ${{ matrix.os }} / ghc ${{ matrix.ghc }}
+    runs-on: ${{ matrix.os }}
+    strategy:
+      matrix:
+        os: [ubuntu-latest, macOS-latest, windows-latest]
+        cabal: ["latest"]
+        ghc:
+          - "8.10.4"
+
+    steps:
+    - uses: actions/checkout@v2
+      name: Checkout base repo
+    - uses: haskell/actions/setup@v1
+      id: haskell-setup
+      name: Setup Haskell
+      with:
+        ghc-version: ${{ matrix.ghc }}
+        cabal-version: ${{ matrix.cabal }}
+    - name: Configure main repo
+      run: cabal new-configure --disable-optimization
+    - name: Freeze
+      run: cabal freeze
+    - uses: actions/cache@v2.1.3
+      name: Cache
+      env:
+        V: 0
+      with:
+        path: ${{ steps.haskell-setup.outputs.cabal-store }}
+        key: ${{ env.V }}-${{ runner.os }}-${{ matrix.ghc }}-${{ hashFiles('cabal.project.freeze') }}
+        restore-keys: |
+          ${{ env.V }}-${{ runner.os }}-${{ matrix.ghc }}-
+          ${{ env.V }}-${{ runner.os }}-
+    - name: Install base dependencies
+      run: cabal new-build --only-dependencies
+    - name: Build base repo
+      run: |
+        cabal new-build || { # macOS + TH = QQ
+          cabal clean && cabal new-build
+        }
