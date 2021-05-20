@@ -7,7 +7,7 @@ let g:ale_lint_on_text_changed = 'never'
 let g:ale_lint_on_insert_leave = 0
 let g:ale_lint_on_enter = 0
 
-call ale#Set('haskell_cabal_build_options', '--disable-optimization')
+call ale#Set('haskell_cabal_build_options', '--disable-optimization --enable-tests')
 call ale#Set('c_cc_executable', 'gcc')
 call ale#Set('c_cc_options', '-std=c99 -march=native -Wall -Wextra')
 

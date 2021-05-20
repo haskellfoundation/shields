@@ -3,7 +3,7 @@
 {-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE TupleSections #-}
 
-module Shields
+module Shields.Response
   ( Colour,
     renderColour,
     parseColour,
