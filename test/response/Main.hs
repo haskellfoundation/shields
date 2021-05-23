@@ -5,8 +5,20 @@ module Main (main) where
 import Data.CaseInsensitive (mk)
 import qualified Data.Map.Strict as M
 import Shields.Api (api)
-import Snap.Core (getHeader, rspStatus, rspStatusReason)
-import Snap.Test (RequestBuilder, get, runHandler)
+import Snap.Core
+  ( Method (HEAD),
+    getHeader,
+    rspStatus,
+    rspStatusReason,
+  )
+import Snap.Test
+  ( RequestBuilder,
+    RequestType (RequestWithRawBody),
+    get,
+    runHandler,
+    setRequestPath,
+    setRequestType,
+  )
 import Test.Tasty (TestTree, defaultMain, testGroup)
 import Test.Tasty.HUnit (assertEqual, testCase)
 
@@ -17,7 +29,15 @@ tests :: TestTree
 tests =
   testGroup
     "Responses"
-    [ testCase "Get, /, no query params" $ do
+    [ testCase "Get, /heartbeat" $ do
+        resp <- runHandler getHeartbeat api
+        assertEqual "Status code is 200" 200 . rspStatus $ resp
+        assertEqual "Status reason is 'Ok'" "Ok" . rspStatusReason $ resp,
+      testCase "Head, /heartbeat" $ do
+        resp <- runHandler headHeartbeat api
+        assertEqual "Status code is 200" 200 . rspStatus $ resp
+        assertEqual "Status reason is 'Ok'" "Ok" . rspStatusReason $ resp,
+      testCase "Get, /, no query params" $ do
         resp <- runHandler getTopLevelNoQP api
         assertEqual "Status code is 500" 500 . rspStatus $ resp
         assertEqual "Explains that badge request is invalid" "Invalid badge request"
@@ -32,6 +52,14 @@ tests =
     ]
 
 -- Helpers
+
+getHeartbeat :: RequestBuilder IO ()
+getHeartbeat = get "/heartbeat" M.empty
+
+headHeartbeat :: RequestBuilder IO ()
+headHeartbeat = do
+  setRequestType . RequestWithRawBody HEAD $ ""
+  setRequestPath "/heartbeat"
 
 getTopLevelNoQP :: RequestBuilder IO ()
 getTopLevelNoQP = get "/" M.empty

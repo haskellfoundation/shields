@@ -44,6 +44,16 @@ library shields-lib
 
   hs-source-dirs:  src
 
+library snap-client
+  import:          lang
+  visibility:      private
+  exposed-modules: Snap.Client
+  build-depends:
+    , base       >=4.12.0.0 && <4.15.0.0
+    , snap-core
+
+  hs-source-dirs:  client
+
 -- Executable
 
 executable shields
