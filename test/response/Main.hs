@@ -3,7 +3,6 @@
 module Main (main) where
 
 import Data.CaseInsensitive (mk)
-import qualified Data.Map.Strict as M
 import Shields.Api (api)
 import Snap.Core
   ( Method (HEAD),
@@ -14,6 +13,7 @@ import Snap.Core
 import Snap.Test
   ( RequestBuilder,
     RequestType (RequestWithRawBody),
+    assertSuccess,
     get,
     runHandler,
     setRequestPath,
@@ -21,6 +21,7 @@ import Snap.Test
   )
 import Test.Tasty (TestTree, defaultMain, testGroup)
 import Test.Tasty.HUnit (assertEqual, testCase)
+import Prelude hiding (lookup)
 
 main :: IO ()
 main = defaultMain tests
@@ -31,38 +32,27 @@ tests =
     "Responses"
     [ testCase "Get, /heartbeat" $ do
         resp <- runHandler getHeartbeat api
-        assertEqual "Status code is 200" 200 . rspStatus $ resp
+        assertSuccess resp
         assertEqual "Status reason is 'Ok'" "Ok" . rspStatusReason $ resp,
       testCase "Head, /heartbeat" $ do
         resp <- runHandler headHeartbeat api
-        assertEqual "Status code is 200" 200 . rspStatus $ resp
+        assertSuccess resp
         assertEqual "Status reason is 'Ok'" "Ok" . rspStatusReason $ resp,
-      testCase "Get, /, no query params" $ do
-        resp <- runHandler getTopLevelNoQP api
-        assertEqual "Status code is 500" 500 . rspStatus $ resp
-        assertEqual "Explains that badge request is invalid" "Invalid badge request"
-          . rspStatusReason
-          $ resp,
-      testCase "Get, /, label only" $ do
-        resp <- runHandler getTopLevelLabelOnly api
+      testCase "Get, /" $ do
+        resp <- runHandler getTop api
         assertEqual "Status code is 200" 200 . rspStatus $ resp
-        assertEqual "Content type is JSON" (Just "application/json")
-          . getHeader (mk "content-type")
-          $ resp
+        assertEqual "Content type is JSON" (Just "application/json") . getHeader (mk "Content-Type") $ resp
     ]
 
 -- Helpers
 
+getTop :: RequestBuilder IO ()
+getTop = get "/" mempty
+
 getHeartbeat :: RequestBuilder IO ()
-getHeartbeat = get "/heartbeat" M.empty
+getHeartbeat = get "/heartbeat" mempty
 
 headHeartbeat :: RequestBuilder IO ()
 headHeartbeat = do
   setRequestType . RequestWithRawBody HEAD $ ""
   setRequestPath "/heartbeat"
-
-getTopLevelNoQP :: RequestBuilder IO ()
-getTopLevelNoQP = get "/" M.empty
-
-getTopLevelLabelOnly :: RequestBuilder IO ()
-getTopLevelLabelOnly = get "/" . M.singleton "label" $ ["foo"]

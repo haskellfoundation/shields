@@ -3,24 +3,25 @@
 module Shields.Api (api) where
 
 import Control.Applicative ((<|>))
+import Data.Binary.Builder (Builder, fromByteString)
 import Jsonifier (toByteString)
-import Shields.Response (parseResponse, renderResponse)
+import Shields.Response (defaultResponse, renderResponse)
 import Snap.Core
   ( Method (GET, HEAD),
     Snap,
     finishWith,
     getResponse,
-    getsRequest,
     ifTop,
     method,
     methods,
     modifyResponse,
     path,
-    rqQueryParams,
     setContentType,
+    setResponseBody,
     setResponseStatus,
-    writeBS,
   )
+import System.IO.Streams (OutputStream)
+import qualified System.IO.Streams as Streams
 
 -- | @since 1.0.0
 api :: Snap ()
@@ -32,12 +33,16 @@ api = heartbeat <|> shield
       getResponse >>= finishWith
     shield :: Snap ()
     shield = method GET . ifTop $ do
-      queryParams <- getsRequest rqQueryParams
-      case parseResponse queryParams of
-        Nothing -> do
-          modifyResponse . setResponseStatus 500 $ "Invalid badge request"
-          getResponse >>= finishWith
-        Just sr -> do
-          writeBS . toByteString . renderResponse $ sr
-          resp <- getResponse
-          finishWith . setContentType "application/json" $ resp
+      modifyResponse . setResponseStatus 200 $ ""
+      modifyResponse . setContentType $ "application/json"
+      modifyResponse . setResponseBody $ go
+      getResponse >>= finishWith
+    go :: OutputStream Builder -> IO (OutputStream Builder)
+    go stream = do
+      Streams.writeTo stream
+        . Just
+        . fromByteString
+        . toByteString
+        . renderResponse
+        $ defaultResponse
+      pure stream
