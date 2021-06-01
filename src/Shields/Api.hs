@@ -3,8 +3,10 @@
 module Shields.Api (api) where
 
 import Control.Applicative ((<|>))
-import Data.Binary.Builder (Builder, fromByteString)
-import Jsonifier (toByteString)
+import Data.Binary.Builder (Builder, singleton)
+import Data.Bytes.Builder (run)
+import Data.Bytes.Chunks (foldl')
+import Json (encode)
 import Shields.Response (defaultResponse, renderResponse)
 import Snap.Core
   ( Method (GET, HEAD),
@@ -39,10 +41,7 @@ api = heartbeat <|> shield
       getResponse >>= finishWith
     go :: OutputStream Builder -> IO (OutputStream Builder)
     go stream = do
-      Streams.writeTo stream
-        . Just
-        . fromByteString
-        . toByteString
-        . renderResponse
-        $ defaultResponse
+      let cs = run 4080 . encode . renderResponse $ defaultResponse
+      let built = foldl' (\b c -> b <> singleton c) mempty cs
+      Streams.writeTo stream . Just $ built
       pure stream
