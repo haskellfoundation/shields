@@ -1,7 +1,11 @@
 module Main (main) where
 
 import Shields.Api (api)
-import Snap.Http.Server (defaultConfig, httpServe)
+import Snap.Http.Server
+  ( commandLineConfig,
+    emptyConfig,
+    httpServe,
+  )
 
 main :: IO ()
-main = httpServe defaultConfig api
+main = commandLineConfig emptyConfig >>= flip httpServe api
